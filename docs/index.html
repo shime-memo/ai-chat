@@ -1,0 +1,104 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>AI Chat</title>
+<style>
+  body { margin:0; font-family:sans-serif; background:#f8f8f8; }
+  #menu { position: fixed; left: -250px; top:0; width:250px; height:100%; background:#fff; box-shadow:2px 0 5px rgba(0,0,0,0.1); transition:left 0.3s; overflow-y:auto; padding-top:60px; }
+  #menu.open { left:0; }
+  #menu button { display:block; width:100%; padding:15px; border:none; background:none; text-align:left; font-size:16px; cursor:pointer; }
+  #menuToggle { position: fixed; top:10px; left:10px; z-index:1000; background:#fff; border:none; font-size:24px; cursor:pointer; }
+  #chatContainer { padding:60px 10px 80px 10px; max-width:600px; margin:auto; }
+  .message { padding:8px 12px; margin:6px 0; border-radius:12px; max-width:80%; }
+  .user { background:#DCF8C6; align-self:flex-end; margin-left:auto; }
+  .ai { background:#fff; align-self:flex-start; margin-right:auto; }
+  #inputArea { position: fixed; bottom:0; left:0; right:0; display:flex; background:#fff; border-top:1px solid #ccc; padding:5px; }
+  #userInput { flex:1; padding:10px; border-radius:20px; border:1px solid #ccc; outline:none; }
+  #sendBtn { background:none; border:none; font-size:24px; margin-left:5px; cursor:pointer; }
+  .messages { display:flex; flex-direction:column; }
+</style>
+</head>
+<body>
+
+<button id="menuToggle">?</button>
+<div id="menu">
+  <button>New Chat</button>
+  <button>Profile</button>
+  <button>Settings</button>
+  <button>Logout</button>
+</div>
+
+<div id="chatContainer">
+  <div class="messages" id="messages"></div>
+</div>
+
+<div id="inputArea">
+  <input type="text" id="userInput" placeholder="Type a message...">
+  <button id="sendBtn">??</button>
+</div>
+
+<script>
+  const menu = document.getElementById('menu');
+  const toggle = document.getElementById('menuToggle');
+  toggle.addEventListener('click', ()=>{ menu.classList.toggle('open'); });
+
+  const messagesEl = document.getElementById('messages');
+  const input = document.getElementById('userInput');
+  const sendBtn = document.getElementById('sendBtn');
+
+  // š ‚±‚±‚ÉŽæ“¾‚µ‚½APIƒL[‚ð“ü‚ê‚é
+  const OPENAI_API_KEY = "YOUR_API_KEY_HERE";
+
+  async function getAIResponse(text){
+    try {
+      const response = await fetch("https://api.openai.com/v1/chat/completions", {
+        method: "POST",
+        headers: {
+          "Content-Type":"application/json",
+          "Authorization": "Bearer " + OPENAI_API_KEY
+        },
+        body: JSON.stringify({
+          model: "gpt-4",
+          messages: [{role:"user", content:text}]
+        })
+      });
+      const data = await response.json();
+      return data.choices[0].message.content;
+    } catch (err) {
+      console.error(err);
+      return "Error: AI response failed.";
+    }
+  }
+
+  async function sendMessage(){
+    const text = input.value.trim();
+    if(!text) return;
+    addMessage(text, 'user');
+    input.value='';
+    const aiResp = await getAIResponse(text);
+    addMessage(aiResp, 'ai');
+  }
+
+  function addMessage(text, type){
+    const div = document.createElement('div');
+    div.className = 'message ' + type;
+    div.textContent = text;
+    messagesEl.appendChild(div);
+    messagesEl.scrollTop = messagesEl.scrollHeight;
+  }
+
+  sendBtn.addEventListener('click', sendMessage);
+  input.addEventListener('keydown', (e)=>{
+    if(e.key==='Enter'){ sendMessage(); }
+  });
+
+  document.addEventListener('click', (e)=>{
+    if(!menu.contains(e.target) && !toggle.contains(e.target)){
+      menu.classList.remove('open');
+    }
+  });
+</script>
+</body>
+</html>
